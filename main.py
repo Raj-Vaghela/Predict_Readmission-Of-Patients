@@ -9,7 +9,8 @@ df = pd.read_csv('diabetic_data.csv', na_values='?' , low_memory=False)
 # print(withQM.shape)
 # print(len(withQM))
 print(df.describe())
-print(df.shape)
+print('\nshape of original data:',df.shape)
+print('-'*163)
 # print(df.isnull().sum())
 
 # print(f"The count of '?' :") #Checks for ?s in the dataset's columns
@@ -32,8 +33,8 @@ missingPercentage = (missingValues/len(df))*100
 
 missingInfo = pd.DataFrame({'Missing Values': missingValues, 'Missing Percentage': missingPercentage})
 print(missingInfo)
+print('\nShape after dropping encounter_id:',df.shape)
 print('-'*163)
-print('Shape:',df.shape)
 
 # code to display all unique values in a column
 # unique_values = df['readmitted'].unique()
@@ -50,14 +51,14 @@ print('Shape:',df.shape)
 #     print()
 
 unique_values = df['readmitted'].unique()
-print("Different values occurring in the 'readmitted' column:")
+print("\nDifferent values occurring in the 'readmitted' column:")
 for value in unique_values:
     print(value)
 
 df['readmitted'] = df['readmitted'].replace({'<30':1, '>30':0, 'NO':0}, )
 
 unique_values = df['readmitted'].unique()
-print("Different New values occurring in the 'readmitted' column:")
+print("\nDifferent New values occurring in the 'readmitted' column:")
 for value in unique_values:
     print(value)
 
@@ -70,5 +71,13 @@ columns_to_drop = columns_to_drop_from_ProblemStatement + col_with_over_90perc_M
 # print(columns_to_drop)
 
 df.drop(columns=columns_to_drop, inplace=True)
+print('\nShape of data after dropping cols mentioned in Problem Statement and cols with more than 90% missing values')
 print(df.shape)
+print('-'*163)
+
+# unique_values = df['max_glu_serum'].unique()
+# print("\nDifferent New values occurring in the 'max_glu_serum' column:")
+# for value in unique_values:
+#     print(value)
+
 
