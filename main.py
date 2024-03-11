@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import zscore
 
 df = pd.read_csv('diabetic_data.csv', na_values='?' , low_memory=False)
 
@@ -75,9 +76,38 @@ print('\nShape of data after dropping cols mentioned in Problem Statement and co
 print(df.shape)
 print('-'*163)
 
-# unique_values = df['max_glu_serum'].unique()
-# print("\nDifferent New values occurring in the 'max_glu_serum' column:")
-# for value in unique_values:
-#     print(value)
+def count_outliers_iqr(data):
+    Q1 = data.quantile(0.25)
+    Q3 = data.quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    outliers = (data < lower_bound) | (data > upper_bound)
+    num_outliers = outliers.sum()
+
+    return num_outliers
+
+for column_name in df.columns:
+    if df[column_name].dtype in ['int64', 'float64']:
+        num_outliers = count_outliers_iqr(df[column_name])
+        print(f"Number of outliers in '{column_name}': {num_outliers}")
+
+
+print('-'*163)
+# Define a function to identify outliers using Z-score method
+def identify_outliers_zscore(data, threshold=4):
+    z_scores = zscore(data)
+    outliers = (abs(z_scores) > threshold)
+    return outliers
+
+for column in df.columns:
+    if df[column].dtype in ['int64', 'float64']:
+        outliers = identify_outliers_zscore(df[column])
+        num_outliers = outliers.sum()
+
+        print(f"Number of outliers in '{column}': {num_outliers}")
+
+
+
 
 
