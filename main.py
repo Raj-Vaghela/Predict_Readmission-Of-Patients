@@ -61,18 +61,14 @@ print("Different New values occurring in the 'readmitted' column:")
 for value in unique_values:
     print(value)
 
+columns_to_drop_from_ProblemStatement = ['repaglinide','nateglinide','chlorpropamide','glimepiride','acetohexamide','tolbutamide','acarbose','miglitol','troglitazone','tolazamide','examide','citoglipton','glyburide-metformin','glipizide-metformin','glimepiride-pioglitazone','metformin-rosiglitazone','metformin-pioglitazone']
 
-unique_values = df['max_glu_serum'].unique()
-print("Different values occurring in the 'max_glu_serum' column:")
-for value in unique_values:
-    print(value)
+col_with_over_90perc_MisVal = missingPercentage[missingPercentage>90].index.tolist()
+# print(col_with_over_90perc_MisVal)
 
-columns_to_drop_fromPS = ['repaglinide','nateglinide','chlorpropamide','glimepiride','acetohexamide',
-                   'tolbutamide','acarbose','miglitol','troglitazone','tolazamide','examide',
-                   'citoglipton','glyburide-metformin','glipizide-metformin','glimepiride-pioglitazone',
-                   'metformin-rosiglitazone','metformin-pioglitazone']
-
-
+columns_to_drop = columns_to_drop_from_ProblemStatement + col_with_over_90perc_MisVal
+# print(columns_to_drop)
 
 df.drop(columns=columns_to_drop, inplace=True)
 print(df.shape)
+
