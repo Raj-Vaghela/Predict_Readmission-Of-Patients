@@ -88,8 +88,8 @@ def count_outliers_iqr(data):
     Q1 = data.quantile(0.25)
     Q3 = data.quantile(0.75)
     IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
+    lower_bound = Q1 - 3 * IQR
+    upper_bound = Q3 + 3 * IQR
     outliers = (data < lower_bound) | (data > upper_bound)
     return outliers.sum()
 
@@ -151,15 +151,16 @@ print('-'*163)
 #     print('-'*163)
 #     plt.subplots_adjust(hspace=0.5)     # Add some space between subplots
 # plt.show()
+
 print(df.shape)
 print('-'*163)
 
-unique_values = df['patient_nbr'].unique()
-unique_values_count = df['patient_nbr'].nunique()
-print(f"Number of unique values: {unique_values_count}")
-print("Different unique values occurring in the 'patient_nbr' column:")
-for value in unique_values:
-    print(value)
+# unique_values = df['payer_code'].unique()
+# unique_values_count = df['payer_code'].nunique()
+# print(f"Number of unique values: {unique_values_count}")
+# print("Different unique values occurring in the 'payer_code' column:")
+# for value in unique_values:
+#     print(value)
 
 
 
