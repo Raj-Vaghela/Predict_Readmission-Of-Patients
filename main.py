@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import zscore
+from scipy.stats import zscore, skew, normaltest
 
 df = pd.read_csv('diabetic_data.csv', na_values='?' , low_memory=False)
 
@@ -52,14 +52,18 @@ print('-'*163)
 #     print()
 
 unique_values = df['readmitted'].unique()
-print("\nDifferent values occurring in the 'readmitted' column:")
+unique_values_count = df['readmitted'].nunique()
+print(f"Number of unique values in the 'readmitted' column: {unique_values_count}")
+print("Different values occurring in the 'readmitted' column:")
 for value in unique_values:
     print(value)
 
 df['readmitted'] = df['readmitted'].replace({'<30':1, '>30':0, 'NO':0}, )
 
 unique_values = df['readmitted'].unique()
-print("\nDifferent New values occurring in the 'readmitted' column:")
+unique_values_count = df['readmitted'].nunique()
+print(f"\nNumber of unique values in the 'readmitted' column: {unique_values_count}")
+print("Different New values occurring in the 'readmitted' column:")
 for value in unique_values:
     print(value)
 
@@ -75,7 +79,11 @@ df.drop(columns=columns_to_drop, inplace=True)
 print('\nShape of data after dropping cols mentioned in Problem Statement and cols with more than 90% missing values')
 print(df.shape)
 print('-'*163)
-
+# Define a function to identify outliers using Z-score method
+def identify_outliers_zscore(data, threshold=4):
+    z_scores = zscore(data)
+    outliers = (abs(z_scores) > threshold)
+    return outliers
 def count_outliers_iqr(data):
     Q1 = data.quantile(0.25)
     Q3 = data.quantile(0.75)
@@ -83,31 +91,75 @@ def count_outliers_iqr(data):
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
     outliers = (data < lower_bound) | (data > upper_bound)
-    num_outliers = outliers.sum()
-
-    return num_outliers
-
-for column_name in df.columns:
-    if df[column_name].dtype in ['int64', 'float64']:
-        num_outliers = count_outliers_iqr(df[column_name])
-        print(f"Number of outliers in '{column_name}': {num_outliers}")
+    return outliers.sum()
 
 
-print('-'*163)
-# Define a function to identify outliers using Z-score method
-def identify_outliers_zscore(data, threshold=4):
-    z_scores = zscore(data)
-    outliers = (abs(z_scores) > threshold)
-    return outliers
-
+# Loop through each column in the DataFrame
 for column in df.columns:
     if df[column].dtype in ['int64', 'float64']:
         outliers = identify_outliers_zscore(df[column])
         num_outliers = outliers.sum()
+        print(f"Number of outliers by Z-score in '{column}': {num_outliers}")
 
-        print(f"Number of outliers in '{column}': {num_outliers}")
+print('-'*163)
+for column in df.columns:
+    if df[column].dtype in ['int64', 'float64']:
+        outliers = count_outliers_iqr(df[column])
+        num_outliers = outliers.sum()
+        print(f"Number of outliers by IQR in '{column}': {outliers}")
+print('-'*163)
 
+# numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
+#
+# fig, axes = plt.subplots(len(numeric_cols), 2, figsize=(12, 4 * len(numeric_cols))) # Create subplots with 2 columns
+#
+# for i, col in enumerate(numeric_cols): # Plot histograms and density plots for each numeric column and perform normality test
+#
+#     axes[i, 0].hist(df[col], bins=30, color='skyblue', edgecolor='black', alpha=0.7)
+#     axes[i, 0].set_title('Histogram of ' + col)
+#     axes[i, 0].set_xlabel('Values')
+#     axes[i, 0].set_ylabel('Frequency')
+#     axes[i, 0].grid(True)
+#
+#     df[col].plot(kind='density', ax=axes[i, 1], color='skyblue')
+#     axes[i, 1].set_title('Density Plot of ' + col)
+#     axes[i, 1].set_xlabel('Values')
+#     axes[i, 1].set_ylabel('Density')
+#     axes[i, 1].grid(True)
+#
+#     skewness = skew(df[col])     # Calculate skewness
+#     normal_test_result = normaltest(df[col]) # Perform normality test
+#
+#     print(f"Column: {col}")
+#     print(f"Skewness: {skewness}")
+#     print(f"Normality test p-value: {normal_test_result.pvalue}")
+#
+#     # Determine skewness interpretation
+#     if abs(skewness) < 0.5:
+#         print("The data is approximately symmetric (close to normally distributed).")
+#     elif skewness < -0.5:
+#         print("The data is left-skewed.")
+#     else:
+#         print("The data is right-skewed.")
+#
+#     # Determine normality test interpretation
+#     if normal_test_result.pvalue < 0.05:
+#         print("The data is not normally distributed (NOTE: use IQR METHOD to determine outliers) (reject the null hypothesis).")
+#     else:
+#         print("The data is normally distributed (NOTE: use Z-score METHOD to determine outliers) (fail to reject the null hypothesis).")
+#
+#     print('-'*163)
+#     plt.subplots_adjust(hspace=0.5)     # Add some space between subplots
+# plt.show()
+print(df.shape)
+print('-'*163)
 
+unique_values = df['patient_nbr'].unique()
+unique_values_count = df['patient_nbr'].nunique()
+print(f"Number of unique values: {unique_values_count}")
+print("Different unique values occurring in the 'patient_nbr' column:")
+for value in unique_values:
+    print(value)
 
 
 
