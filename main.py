@@ -238,6 +238,42 @@ discharge_disposition_id_mapping = {
 #     print(value)
 
 df_no_outliers['discharge_disposition_id'] = df_no_outliers['discharge_disposition_id'].map(discharge_disposition_id_mapping)
+
+admisssion_source_id_mapping = {
+    1: 'Physician Referral',
+    2: 'Clinic Referral',
+    3: 'HMO Referral',
+    4: 'Transfer from a hospital',
+    5: 'Transfer from a Skilled Nursing Facility (SNF)',
+    6: 'Transfer from another health care facility',
+    7: 'Emergency Room',
+    8: 'Court/Law Enforcement',
+    9: 'Not Available',
+    10: 'Transfer from critial access hospital',
+    11: 'Normal Delivery',
+    12: 'Premature Delivery',
+    13: 'Sick Baby',
+    14: 'Extramural Birth',
+    15: 'Not Available',
+    17: 'NULL',
+    18: 'Transfer From Another Home Health Agency',
+    19: 'Readmission to Same Home Health Agency',
+    20: 'Not Mapped',
+    21: 'Unknown/Invalid',
+    22: 'Transfer from hospital inpt/same fac reslt in a sep claim',
+    23: 'Born inside this hospital',
+    24: 'Born outside this hospital',
+    25: 'Transfer from Ambulatory Surgery Center',
+    26: 'Transfer from Hospice',
+}
+
+df_no_outliers = pd.get_dummies(df_no_outliers, columns=['admission_source_id'], prefix='admission_source_')
+
+print(df_no_outliers.columns)
+print(df_no_outliers.shape)
+
+
+
 df_no_outliers = pd.get_dummies(df_no_outliers, columns=['discharge_disposition_id'], prefix='discharge_disposition_')
 
 print(df_no_outliers.columns)
@@ -287,6 +323,34 @@ plt.xticks(rotation=45)
 plt.yticks(rotation=0)
 plt.tight_layout()
 plt.show()
+
+corr_matrix_2 = df_no_outliers.corr()
+
+# Extract the correlation values with the 'readmitted' column
+admission_source_corr = corr_matrix_2['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('admission_source')]]
+print("Correlation of admission source columns with 'readmitted':")
+print(admission_source_corr)
+
+plt.figure(figsize=(10, 6))
+sns.heatmap(admission_source_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
+plt.title("Correlation Heatmap of 'readmitted' with Admission Source")
+plt.xlabel("Admission Source")
+plt.ylabel("Correlation with 'readmitted'")
+plt.xticks(rotation=45)
+plt.yticks(rotation=0)
+plt.tight_layout()
+plt.show()
+
+admission_type_cols = [col for col in df_no_outliers.columns if col.startswith('admission_type')]
+df_no_outliers = df_no_outliers.drop(columns=admission_type_cols)
+
+# Drop columns starting with 'discharge_disposition'
+discharge_disposition_cols = [col for col in df_no_outliers.columns if col.startswith('discharge_disposition')]
+df_no_outliers = df_no_outliers.drop(columns=discharge_disposition_cols)
+
+# Drop columns starting with 'admission_source'
+admission_source_cols = [col for col in df_no_outliers.columns if col.startswith('admission_source')]
+df_no_outliers = df_no_outliers.drop(columns=admission_source_cols)
 
 col_to_normalize = ['number_inpatient','number_emergency','number_outpatient','num_medications','num_procedures','num_lab_procedures','time_in_hospital','number_diagnoses']
 
@@ -378,4 +442,10 @@ plt.title('Correlation Matrix Heatmap')
 plt.show()
 
 
+# Drop columns starting with 'admission_type'
+
+
+# Print dtype of each column
+for column in df_no_outliers.columns:
+    print(f"{column}: {df_no_outliers[column].dtype}")
 
