@@ -7,16 +7,16 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from imblearn.over_sampling import SMOTE
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.preprocessing import OneHotEncoder
 
-df = pd.read_csv('diabetic_data.csv', na_values='?' , low_memory=False)
+df = pd.read_csv('diabetic_data.csv', na_values=['?','None'] , low_memory=False)
 
 print(df.describe())
 print('\nshape of original data:',df.shape)
 print('-'*163)
 
-df.drop(columns=['encounter_id'], inplace=True)
+df.drop(columns=['encounter_id','A1Cresult'], inplace=True)
 missingValues = df.isna().sum()
 missingValues = missingValues[missingValues>0]
 missingPercentage = (missingValues/len(df))*100
@@ -242,7 +242,9 @@ print(df_no_outliers.T.head(20))
 
 print('Before Encoding shape:',df_no_outliers.shape)
 
-categorical_cols_forLabelEncoding = ['diabetesMed','change','insulin','rosiglitazone','pioglitazone','glyburide','glipizide','metformin','A1Cresult','max_glu_serum','age','gender']
+categorical_cols_forLabelEncoding = ['diabetesMed','change','insulin','rosiglitazone','pioglitazone','glyburide','glipizide','metformin',
+                                     # 'A1Cresult','max_glu_serum',
+                                     'age','gender']
 categorical_cols_forOneHotEncoding = ['diag_1','diag_2','diag_3','medical_specialty','payer_code','admission_type_id','discharge_disposition_id','admission_source_id','race']
 # Perform one-hot encoding for each categorical column
 
@@ -414,23 +416,15 @@ precision = true_positives / (true_positives + false_positives)
 print("Precision:", precision)
 
 
-
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_squared_log_error, mean_absolute_percentage_error
+
 print('-'*163)
-# Compute Mean Absolute Error (MAE)
 mae = mean_absolute_error(y_test, y_pred)
 print("Mean Absolute Error (MAE):", mae)
-print('-'*163)
-# Compute Root Mean Squared Error (RMSE)
 rmse = mean_squared_error(y_test, y_pred, squared=False)
 print("Root Mean Squared Error (RMSE):", rmse)
-print('-'*163)
-# Compute R-squared (R2)
 r2 = r2_score(y_test, y_pred)
 print("R-squared (R2):", r2)
-print('-'*163)
-
-# Compute Mean Absolute Percentage Error (MAPE)
 mape = mean_absolute_percentage_error(y_test, y_pred)
 print("Mean Absolute Percentage Error (MAPE):", mape)
 print('-'*163)
@@ -460,6 +454,110 @@ print("F1-score:", f1)
 # Calculate ROC AUC score
 roc_auc = roc_auc_score(y_test, y_pred)
 print("ROC AUC score:", roc_auc)
+#---------------------------------------------------------------------------------------------------------------------
+# oversampling
+#---------------------------------------------------------------------------------------------------------------------
+
+from imblearn.over_sampling import RandomOverSampler
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
+# Apply oversampling to the training set
+oversampler = RandomOverSampler(random_state=42)
+X_train_resampled, y_train_resampled = oversampler.fit_resample(X_train, y_train)
+
+# Train the model on the resampled training set
+linear_model = LinearRegression()
+linear_model.fit(X_train_resampled, y_train_resampled)
+
+# Make predictions on the test set
+y_pred = linear_model.predict(X_test)
+
+print('-'*163)
+print('AFTER OVERSAMPLING')
+print('-'*163)
+
+# Evaluate the model using Mean Squared Error
+mse = mean_squared_error(y_test, y_pred)
+print("Mean Squared Error:", mse)
+
+# Convert predicted values to binary classifications (0 or 1)
+y_pred_binary = (y_pred >= 0.5).astype(int)
+
+# Compute accuracy
+accuracy = accuracy_score(y_test, y_pred_binary)
+print("Accuracy:", accuracy)
+
+# Compute precision
+precision = precision_score(y_test, y_pred_binary)
+print("Precision:", precision)
+
+# Compute recall
+recall = recall_score(y_test, y_pred_binary)
+print("Recall:", recall)
+
+# Compute F1-score
+f1 = f1_score(y_test, y_pred_binary)
+print("F1-score:", f1)
+
+# Compute ROC AUC score
+roc_auc = roc_auc_score(y_test, y_pred)
+print("ROC AUC score:", roc_auc)
+
+#---------------------------------------------------------------------------------------------------------------------
+#AFTER UNDERSAMPLING
+#---------------------------------------------------------------------------------------------------------------------
+from imblearn.under_sampling import RandomUnderSampler
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
+# Apply undersampling to the training set
+undersampler = RandomUnderSampler(random_state=42)
+X_train_resampled, y_train_resampled = undersampler.fit_resample(X_train, y_train)
+
+# Train the model on the resampled training set
+linear_model = LinearRegression()
+linear_model.fit(X_train_resampled, y_train_resampled)
+
+# Make predictions on the test set
+y_pred = linear_model.predict(X_test)
+
+
+print('-'*163)
+print('AFTER UNDERSAMPLING')
+print('-'*163)
+
+# Evaluate the model using Mean Squared Error
+mse = mean_squared_error(y_test, y_pred)
+print("Mean Squared Error:", mse)
+
+# Convert predicted values to binary classifications (0 or 1)
+y_pred_binary = (y_pred >= 0.5).astype(int)
+
+# Compute accuracy
+accuracy = accuracy_score(y_test, y_pred_binary)
+print("Accuracy:", accuracy)
+
+# Compute precision
+precision = precision_score(y_test, y_pred_binary)
+print("Precision:", precision)
+
+# Compute recall
+recall = recall_score(y_test, y_pred_binary)
+print("Recall:", recall)
+
+# Compute F1-score
+f1 = f1_score(y_test, y_pred_binary)
+print("F1-score:", f1)
+
+# Compute ROC AUC score
+roc_auc = roc_auc_score(y_test, y_pred)
+print("ROC AUC score:", roc_auc)
+
+
+
+
+
 
 #---------------------------------------------------------------------------------------------------------------------
 # model = LogisticRegression()
@@ -490,3 +588,46 @@ print("ROC AUC score:", roc_auc)
 # y_pred = model.predict(X_test)
 # print("Classification Report on Test Set:")
 # print(classification_report(y_test, y_pred))
+#---------------------------------------------------------------------------------------------------------------------
+
+print('-'*163)
+print('Random Forest')
+print('-'*163)
+
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+from imblearn.over_sampling import SMOTE
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+
+data = df_no_outliers.copy()
+
+X = data.drop('readmitted', axis=1)
+y = data['readmitted']
+
+sc_X = StandardScaler()
+X_s = sc_X.fit_transform(X)
+
+X_train, X_test, y_train, y_test = train_test_split(X_s, y, test_size=0.2, random_state=42)
+
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+print(f'Accuracy: {accuracy_score(y_test, y_pred):%}', )
+print(f'Precision: { precision_score(y_test, y_pred):%}',)
+print(f'Recall: { recall_score(y_test, y_pred):%}',)
+print(f'F1 Score: { f1_score(y_test, y_pred):%}',)
+
+smote = SMOTE(random_state=42)
+X_resampled, y_resampled = smote.fit_resample(X_s, y)
+
+X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.2, random_state=42)
+
+model_balance  = RandomForestClassifier()
+model_balance.fit(X_train, y_train)
+
+y_pred_balanced = model_balance.predict(X_test)
+print(f'Balanced Data - Accuracy: {accuracy_score(y_test, y_pred_balanced):%}', )
+print(f'Balanced Data - Precision: {precision_score(y_test, y_pred_balanced):%}', )
+print(f'Balanced Data - Recall: {recall_score(y_test, y_pred_balanced):%}', )
+print(f'Balanced Data - F1 Score: {f1_score(y_test, y_pred_balanced):%}', )
