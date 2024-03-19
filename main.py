@@ -1,7 +1,11 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
 
 df = pd.read_csv('diabetic_data.csv', na_values='?' , low_memory=False)
 
@@ -35,6 +39,30 @@ print("Different New values occurring in the 'readmitted' column:")
 for value in unique_values:
     print(value)
 
+print('-'*163)
+value_counts = df['readmitted'].value_counts()
+
+# Print the occurrence of each unique value
+print("Occurrence of each unique value in the column:")
+for value, count in value_counts.items():
+    print(f"{value}: {count}")
+print('ratio :',90409/11357)
+print('-'*163)
+print('values in admission_type_id :')
+print(df['admission_type_id'].unique())
+print('-'*163)
+print('-'*163)
+print('value in discharge_disposition_id :')
+print(df['discharge_disposition_id'].unique())
+print('-'*163)
+print('-'*163)
+print('value in admission_source_id :')
+print(df['admission_source_id'].unique())
+print('-'*163)
+# Print the occurrence of each unique value
+print("Occurrence of each unique value in the column:")
+for value, count in value_counts.items():
+    print(f"{value}: {count}")
 columns_to_drop_from_ProblemStatement = ['repaglinide','nateglinide','chlorpropamide','glimepiride','acetohexamide','tolbutamide','acarbose','miglitol','troglitazone','tolazamide','examide','citoglipton','glyburide-metformin','glipizide-metformin','glimepiride-pioglitazone','metformin-rosiglitazone','metformin-pioglitazone']
 
 col_with_over_90perc_MisVal = missingPercentage[missingPercentage>90].index.tolist()
@@ -62,7 +90,7 @@ for column in df.select_dtypes(include=['int64', 'float64']).columns:
     if column != 'readmitted':
         outliers = identify_outliers_iqr(df[column])
         num_outliers = outliers.sum()
-        df_no_outliers = df_no_outliers[~outliers]
+        df_no_outliers = df_no_outliers.loc[~outliers]
         print(f"Number of outliers by IQR in '{column}': {num_outliers}")
     print(df_no_outliers.shape)
 
@@ -113,158 +141,74 @@ print('-'*163)
 
 print('Shape of Data after removing outliers: ',df_no_outliers.shape)
 print('-'*163)
-#
-# admission_type_mapping ={
-#     1: 'Emergency',
-#     2: 'Urgent',
-#     3: 'Elective',
-#     4: 'Newborn',
-#     5: 'Not Available',
-#     6: 'NULL',
-#     7: 'Trauma Center',
-#     8: 'Not Mapped'
-# }
-#
-# print(df_no_outliers['admission_type_id'].unique().sort())
-# print(df_no_outliers['admission_type_id'].value_counts())
-# print(df_no_outliers['admission_type_id'].isnull().sum())
-#
-# df_no_outliers['admission_type_id'] = df_no_outliers['admission_type_id'].map(admission_type_mapping)
-#
-# print(df_no_outliers['admission_type_id'].unique())
-# print(df_no_outliers['admission_type_id'].value_counts())
-# print(df_no_outliers['admission_type_id'].isnull().sum())
-#
-# discharge_disposition_id_mapping = {
-#     1: 'Discharged to home',
-#     2: 'Discharged/transferred to another short term hospital',
-#     3: 'Discharged/transferred to SNF',
-#     4: 'Discharged/transferred to ICF',
-#     5: 'Discharged/transferred to another type of inpatient care institution',
-#     6: 'Discharged/transferred to home with home health service',
-#     7: 'Left AMA',
-#     8: 'Discharged/transferred to home under care of Home IV provider',
-#     9: 'Admitted as an inpatient to this hospital',
-#     10: 'Neonate discharged to another hospital for neonatal aftercare',
-#     11: 'Expired',
-#     12: 'Still patient or expected to return for outpatient services',
-#     13: 'Hospice / home',
-#     14: 'Hospice / medical facility',
-#     15: 'Discharged/transferred within this institution to Medicare approved swing bed',
-#     16: 'Discharged/transferred/referred another institution for outpatient services',
-#     17: 'Discharged/transferred/referred to this institution for outpatient services',
-#     18: 'NULL',
-#     19: 'Expired at home. Medicaid only, hospice.',
-#     20: 'Expired in a medical facility. Medicaid only, hospice.',
-#     21: 'Expired, place unknown. Medicaid only, hospice.',
-#     22: 'Discharged/transferred to another rehab fac including rehab units of a hospital .',
-#     23: 'Discharged/transferred to a long term care hospital.',
-#     24: 'Discharged/transferred to a nursing facility certified under Medicaid but not certified under Medicare.',
-#     25: 'Not Mapped',
-#     26: 'Unknown/Invalid',
-#     30: 'Discharged/transferred to another Type of Health Care Institution not Defined Elsewhere',
-#     27: 'Discharged/transferred to a federal health care facility.',
-#     28: 'Discharged/transferred/referred to a psychiatric hospital of psychiatric distinct part unit of a hospital',
-#     29: 'Discharged/transferred to a Critical Access Hospital (CAH).',
-# }
-#
-# df_no_outliers['discharge_disposition_id'] = df_no_outliers['discharge_disposition_id'].map(discharge_disposition_id_mapping)
-#
-# admisssion_source_id_mapping = {
-#     1: 'Physician Referral',
-#     2: 'Clinic Referral',
-#     3: 'HMO Referral',
-#     4: 'Transfer from a hospital',
-#     5: 'Transfer from a Skilled Nursing Facility (SNF)',
-#     6: 'Transfer from another health care facility',
-#     7: 'Emergency Room',
-#     8: 'Court/Law Enforcement',
-#     9: 'Not Available',
-#     10: 'Transfer from critial access hospital',
-#     11: 'Normal Delivery',
-#     12: 'Premature Delivery',
-#     13: 'Sick Baby',
-#     14: 'Extramural Birth',
-#     15: 'Not Available',
-#     17: 'NULL',
-#     18: 'Transfer From Another Home Health Agency',
-#     19: 'Readmission to Same Home Health Agency',
-#     20: 'Not Mapped',
-#     21: 'Unknown/Invalid',
-#     22: 'Transfer from hospital inpt/same fac reslt in a sep claim',
-#     23: 'Born inside this hospital',
-#     24: 'Born outside this hospital',
-#     25: 'Transfer from Ambulatory Surgery Center',
-#     26: 'Transfer from Hospice',
-# }
 
 # Perform one-hot encoding for the admission_type_id , admission_source_id and  discharge_disposition_id column
 
-df_no_outliers = pd.get_dummies(df_no_outliers, columns=['admission_source_id'], prefix='admission_source_')
-# print(df_no_outliers.columns)
-print(df_no_outliers.shape)
-
-df_no_outliers = pd.get_dummies(df_no_outliers, columns=['discharge_disposition_id'], prefix='discharge_disposition_')
-# print(df_no_outliers.columns)
-print(df_no_outliers.shape)
-
-df_no_outliers = pd.get_dummies(df_no_outliers, columns=['admission_type_id'], prefix='admission_type_')
-# print(df_no_outliers.columns)
-print(df_no_outliers.shape)
-
-corr_matrix = df_no_outliers.corr()
-
-# Extract the correlation values with the 'readmitted' column
-admission_type_corr = corr_matrix['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('admission_type')]]
-
-# Print the correlation values
-print("Correlation of admission type columns with 'readmitted':")
-print(admission_type_corr)
-
-plt.figure(figsize=(10, 6))
-sns.heatmap(admission_type_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
-plt.title("Correlation Heatmap of 'readmitted' with Admission Type")
-plt.xlabel("Admission Type")
-plt.ylabel("Correlation with 'readmitted'")
-plt.xticks(rotation=45)
-plt.yticks(rotation=0)
-plt.tight_layout()
-plt.show()
-
-
-corr_matrix_1 = df_no_outliers.corr()
-
-# Extract the correlation values with the 'readmitted' column
-discharge_disposition_corr = corr_matrix_1['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('discharge_disposition')]]
-print("Correlation of discharge disposition columns with 'readmitted':")
-print(discharge_disposition_corr)
-
-plt.figure(figsize=(10, 6))
-sns.heatmap(discharge_disposition_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
-plt.title("Correlation Heatmap of 'readmitted' with Discharge Disposition")
-plt.xlabel("Discharge Disposition")
-plt.ylabel("Correlation with 'readmitted'")
-plt.xticks(rotation=45)
-plt.yticks(rotation=0)
-plt.tight_layout()
-plt.show()
-
-corr_matrix_2 = df_no_outliers.corr()
-
-# Extract the correlation values with the 'readmitted' column
-admission_source_corr = corr_matrix_2['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('admission_source')]]
-print("Correlation of admission source columns with 'readmitted':")
-print(admission_source_corr)
-
-plt.figure(figsize=(10, 6))
-sns.heatmap(admission_source_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
-plt.title("Correlation Heatmap of 'readmitted' with Admission Source")
-plt.xlabel("Admission Source")
-plt.ylabel("Correlation with 'readmitted'")
-plt.xticks(rotation=45)
-plt.yticks(rotation=0)
-plt.tight_layout()
-plt.show()
+# df_no_outliers = pd.get_dummies(df_no_outliers, columns=['admission_source_id'], prefix='admission_source_')
+# # print(df_no_outliers.columns)
+# print(df_no_outliers.shape)
+#
+# df_no_outliers = pd.get_dummies(df_no_outliers, columns=['discharge_disposition_id'], prefix='discharge_disposition_')
+# # print(df_no_outliers.columns)
+# print(df_no_outliers.shape)
+#
+# df_no_outliers = pd.get_dummies(df_no_outliers, columns=['admission_type_id'], prefix='admission_type_')
+# # print(df_no_outliers.columns)
+# print(df_no_outliers.shape)
+#
+# corr_matrix = df_no_outliers.corr()
+#
+# # Extract the correlation values with the 'readmitted' column
+# admission_type_corr = corr_matrix['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('admission_type')]]
+#
+# # Print the correlation values
+# print("Correlation of admission type columns with 'readmitted':")
+# print(admission_type_corr)
+#
+# plt.figure(figsize=(10, 6))
+# sns.heatmap(admission_type_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
+# plt.title("Correlation Heatmap of 'readmitted' with Admission Type")
+# plt.xlabel("Admission Type")
+# plt.ylabel("Correlation with 'readmitted'")
+# plt.xticks(rotation=45)
+# plt.yticks(rotation=0)
+# plt.tight_layout()
+# plt.show()
+#
+#
+# corr_matrix_1 = df_no_outliers.corr()
+#
+# # Extract the correlation values with the 'readmitted' column
+# discharge_disposition_corr = corr_matrix_1['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('discharge_disposition')]]
+# print("Correlation of discharge disposition columns with 'readmitted':")
+# print(discharge_disposition_corr)
+#
+# plt.figure(figsize=(10, 6))
+# sns.heatmap(discharge_disposition_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
+# plt.title("Correlation Heatmap of 'readmitted' with Discharge Disposition")
+# plt.xlabel("Discharge Disposition")
+# plt.ylabel("Correlation with 'readmitted'")
+# plt.xticks(rotation=45)
+# plt.yticks(rotation=0)
+# plt.tight_layout()
+# plt.show()
+#
+# corr_matrix_2 = df_no_outliers.corr()
+#
+# # Extract the correlation values with the 'readmitted' column
+# admission_source_corr = corr_matrix_2['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('admission_source')]]
+# print("Correlation of admission source columns with 'readmitted':")
+# print(admission_source_corr)
+#
+# plt.figure(figsize=(10, 6))
+# sns.heatmap(admission_source_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
+# plt.title("Correlation Heatmap of 'readmitted' with Admission Source")
+# plt.xlabel("Admission Source")
+# plt.ylabel("Correlation with 'readmitted'")
+# plt.xticks(rotation=45)
+# plt.yticks(rotation=0)
+# plt.tight_layout()
+# plt.show()
 
 print('-'*163)
 print(df_no_outliers.shape)
@@ -279,14 +223,49 @@ print(df_no_outliers.shape)
 # # Drop columns starting with 'admission_source'
 # admission_source_cols = [col for col in df_no_outliers.columns if col.startswith('admission_source')]
 # df_no_outliers = df_no_outliers.drop(columns=admission_source_cols)
-
-col_to_normalize = ['number_inpatient','number_emergency','number_outpatient','num_medications','num_procedures','num_lab_procedures','time_in_hospital','number_diagnoses']
+# 'number_emergency','number_outpatient'
+col_to_normalize = ['number_inpatient','num_medications','num_procedures','num_lab_procedures','time_in_hospital','number_diagnoses']
 
 def min_max_scaling(x):
     return (x - x.min()) / (x.max() - x.min())
 
 df_no_outliers[col_to_normalize] = df_no_outliers[col_to_normalize].apply(min_max_scaling)
-print(df_no_outliers)
+
+print(df_no_outliers.T.head(20))
+
+# Assuming df is your DataFrame
+# cols_to_drop = ['diag_1', 'diag_2', 'diag_3']  # Replace 'col1', 'col2', 'col3' with the column names you want to drop
+# df_no_outliers = df_no_outliers.drop(columns=cols_to_drop)
+
+print('Before Encoding shape:',df_no_outliers.shape)
+
+categorical_cols_forLabelEncoding = ['diabetesMed','change','insulin','rosiglitazone','pioglitazone','glyburide','glipizide','metformin','A1Cresult','max_glu_serum','age','gender']
+categorical_cols_forOneHotEncoding = ['diag_1','diag_2','diag_3','medical_specialty','payer_code','admission_type_id','discharge_disposition_id','admission_source_id','race']
+# Perform one-hot encoding for each categorical column
+
+
+# Apply label encoding to each set of columns
+# for feature in categorical_cols_forLabelEncoding:
+#     le = LabelEncoder()
+#     df_no_outliers[feature] = le.fit_transform(df_no_outliers[feature])
+#
+#
+# cat_cols = df_no_outliers[categorical_cols_forOneHotEncoding]
+# encoder = OneHotEncoder()
+# encoded_features = encoder.fit_transform(cat_cols)
+# encoded_df = pd.DataFrame(encoded_features.toarray(), columns=encoder.get_feature_names(categorical_cols_forOneHotEncoding))
+# df_no_outliers = pd.concat([df_no_outliers.drop(columns=categorical_cols_forOneHotEncoding), encoded_df], axis=1)
+
+for feature in categorical_cols_forLabelEncoding:
+    df_no_outliers[feature] = pd.factorize(df_no_outliers[feature])[0]
+
+# Apply one-hot encoding to each set of columns separately
+df_no_outliers = pd.get_dummies(df_no_outliers, columns=categorical_cols_forOneHotEncoding, drop_first=True)
+
+
+print('After Encoding shape :',df_no_outliers.shape)
+print('-'*163)
+
 
 
 class_counts = df_no_outliers['readmitted'].value_counts()
@@ -301,94 +280,24 @@ plt.xticks(rotation=0)  # Rotate x-axis labels if necessary
 plt.show()
 
 
-age_intervals = ['[0-10)', '[10-20)', '[20-30)', '[30-40)', '[40-50)', '[50-60)', '[60-70)', '[70-80)', '[80-90)', '[90-100)']
-age_labels = ['0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100']
-
-# Group data by age intervals and count readmitted cases
-readmitted_counts = df_no_outliers.groupby('age')['readmitted'].sum()
-
-# Convert age intervals to corresponding labels
-readmitted_counts.index = age_labels
-
-# Plot the count of readmitted cases against age intervals
-plt.figure(figsize=(10, 6))
-readmitted_counts.plot(kind='bar', color='skyblue')
-plt.xlabel('Age Intervals')
-plt.ylabel('Count of Readmitted Cases')
-plt.title('Count of Readmitted Cases by Age Intervals')
-plt.xticks(rotation=45, ha='right')
-plt.show()
-
-
-target_counts = df_no_outliers.groupby('num_medications')['readmitted'].value_counts().unstack(fill_value=0)
-
-plt.figure(figsize=(14,4))
-bars = target_counts.plot(kind='bar', stacked=True, width=0.8, align='center')  # Set align='center' to align bars to tick labels
-
-# Get the current positions of the bars
-positions = np.arange(len(target_counts))
-
-# Manually adjust the positions of the bars
-plt.xticks(positions + 0.2 * (len(target_counts.columns) - 1) / 2, target_counts.index)
-plt.xlabel('Number of Medications')
-plt.ylabel('Count')
-plt.title('Count of Target Variable against Number of Medications (Normalized)')
-plt.legend(title='Readmitted', loc='upper left', labels=['Not Readmitted', 'Readmitted'])
-plt.xticks(rotation=90)
-plt.show()
-
-
-
-target_counts = df_no_outliers.groupby('num_medications')['readmitted'].value_counts().unstack(fill_value=0)
-
-plt.figure(figsize=(14, 6))
-target_counts.plot(kind='line', marker='o', markersize=8)
-plt.xlabel('Number of Medications')
-plt.ylabel('Count')
-plt.title('Count of Target Variable against Number of Medications (Normalized)')
-plt.legend(title='Readmitted', loc='upper right', labels=['Not Readmitted', 'Readmitted'])
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
-
-
-
-# sns.pairplot(df_no_outliers)
-# plt.title('Scatter Matrix Plot (Pairplot)')
-# plt.show()
 
 col_to_move = df_no_outliers.pop('readmitted')
 
 df_no_outliers['readmitted'] = col_to_move
 
-correlation_matrix = df_no_outliers.corr()
-
-plt.figure(figsize=(16, 10))
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
-plt.title('Correlation Matrix Heatmap')
-plt.show()
-
-
-# Drop columns starting with 'admission_type'
-
-
-# Print dtype of each column
-for column in df_no_outliers.columns:
-    print(f"{column}: {df_no_outliers[column].dtype}")
+# correlation_matrix = df_no_outliers.corr()
+#
+# plt.figure(figsize=(16, 10))
+# sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+# plt.title('Correlation Matrix Heatmap')
+# plt.show()
 
 
 
 
-num_cols = df_no_outliers.select_dtypes(include=['number'])
+print('-'*163)
 
-plt.figure(figsize=(12, 10))
-for i, col in enumerate(num_cols.columns):
-    plt.subplot(4, 5, i+1)
-    sns.histplot(df_no_outliers[col], kde=True)
-    plt.title(col)
-plt.tight_layout()
-plt.show()
+
 
 print('-'*163)
 
@@ -412,9 +321,95 @@ print('-'*163)
 
 print(df_no_outliers['readmitted'].unique())
 
-value_counts = df['readmitted'].value_counts()
+value_counts = df_no_outliers['readmitted'].value_counts()
 
 # Print the occurrence of each unique value
 print("Occurrence of each unique value in the column:")
 for value, count in value_counts.items():
     print(f"{value}: {count}")
+print('ratio : ', 23898/2857)
+print('-'*163)
+num_object_columns = len(df_no_outliers.select_dtypes(include=['object']).columns)
+
+print("Number of columns with object datatype:", num_object_columns)
+print('-'*163)
+print('MODEL BUILDING')
+print('-'*163)
+
+print(df_no_outliers.shape)
+#
+# from sklearn.model_selection import train_test_split, cross_val_score
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.metrics import classification_report
+#
+# # Step 1: Split the data into features (X) and target variable (y)
+# X = df_no_outliers.drop(columns=['readmitted'])
+# y = df_no_outliers['readmitted']
+#
+# # Step 2: Split the data into training and test sets
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+#
+# # Step 3: Build the linear model and evaluate it using cross-validation
+# model = LogisticRegression()
+# cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='f1')
+#
+# print("Cross-validation F1 scores:", cv_scores)
+# print("Mean F1 score:", cv_scores.mean())
+#
+# # Step 4: Train the model on the entire training set
+# model.fit(X_train, y_train)
+#
+# # Step 5: Evaluate the model on the test set
+# y_pred = model.predict(X_test)
+# print("Classification Report on Test Set:")
+# print(classification_report(y_test, y_pred))
+
+
+
+
+from sklearn.model_selection import train_test_split
+
+# Split the data into features (X) and target variable (y)
+X = df_no_outliers.drop(columns=['readmitted'])
+y = df_no_outliers['readmitted']
+
+# Split the data into training and test sets, stratifying by the target variable
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Check the proportions of zeros and ones in the train and test sets
+train_zero_count = (y_train == 0).sum()
+train_one_count = (y_train == 1).sum()
+
+test_zero_count = (y_test == 0).sum()
+test_one_count = (y_test == 1).sum()
+
+print("Train set - Zeros:", train_zero_count, "Ones:", train_one_count)
+print("Test set - Zeros:", test_zero_count, "Ones:", test_one_count)
+
+# model = LogisticRegression()
+# cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='f1')
+#
+# print("Cross-validation F1 scores:", cv_scores)
+# print("Mean F1 score:", cv_scores.mean())
+#
+# # Step 4: Train the model on the entire training set
+# model.fit(X_train, y_train)
+#
+# # Step 5: Evaluate the model on the test set
+# y_pred = model.predict(X_test)
+# print("Classification Report on Test Set:")
+# print(classification_report(y_test, y_pred))
+
+smote = SMOTE(random_state=42)
+X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+
+# Build a logistic regression model
+model = LogisticRegression()
+
+# Train the model on the resampled data
+model.fit(X_train_resampled, y_train_resampled)
+
+# Evaluate the model on the test set
+y_pred = model.predict(X_test)
+print("Classification Report on Test Set:")
+print(classification_report(y_test, y_pred))
