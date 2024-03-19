@@ -1,5 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
@@ -367,7 +370,7 @@ print(df_no_outliers.shape)
 
 
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 
 # Split the data into features (X) and target variable (y)
 X = df_no_outliers.drop(columns=['readmitted'])
@@ -376,20 +379,93 @@ y = df_no_outliers['readmitted']
 # Split the data into training and test sets, stratifying by the target variable
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-# Check the proportions of zeros and ones in the train and test sets
-train_zero_count = (y_train == 0).sum()
-train_one_count = (y_train == 1).sum()
+print("Training set - Class distribution:")
+print("Zeros:", (y_train == 0).sum(), "Ones:", (y_train == 1).sum())
 
-test_zero_count = (y_test == 0).sum()
-test_one_count = (y_test == 1).sum()
+print("Test set - Class distribution:")
+print("Zeros:", (y_test == 0).sum(), "Ones:", (y_test == 1).sum())
 
-print("Train set - Zeros:", train_zero_count, "Ones:", train_one_count)
-print("Test set - Zeros:", test_zero_count, "Ones:", test_one_count)
+linear_model = LinearRegression()
 
+# Train the model on the training set
+linear_model.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = linear_model.predict(X_test)
+
+# Evaluate the model using Mean Squared Error
+mse = mean_squared_error(y_test, y_pred)
+print("Mean Squared Error:", mse)
+
+
+# Convert predicted values to binary classifications (0 or 1)
+y_pred_binary = (y_pred >= 0.5).astype(int)
+
+print('-'*163)
+
+# Compute accuracy
+accuracy = (y_pred_binary == y_test).mean()
+print("Accuracy:", accuracy)
+
+# Compute precision
+true_positives = ((y_pred_binary == 1) & (y_test == 1)).sum()
+false_positives = ((y_pred_binary == 1) & (y_test == 0)).sum()
+precision = true_positives / (true_positives + false_positives)
+print("Precision:", precision)
+
+
+
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_squared_log_error, mean_absolute_percentage_error
+print('-'*163)
+# Compute Mean Absolute Error (MAE)
+mae = mean_absolute_error(y_test, y_pred)
+print("Mean Absolute Error (MAE):", mae)
+print('-'*163)
+# Compute Root Mean Squared Error (RMSE)
+rmse = mean_squared_error(y_test, y_pred, squared=False)
+print("Root Mean Squared Error (RMSE):", rmse)
+print('-'*163)
+# Compute R-squared (R2)
+r2 = r2_score(y_test, y_pred)
+print("R-squared (R2):", r2)
+print('-'*163)
+
+# Compute Mean Absolute Percentage Error (MAPE)
+mape = mean_absolute_percentage_error(y_test, y_pred)
+print("Mean Absolute Percentage Error (MAPE):", mape)
+print('-'*163)
+
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
+# Convert predicted probabilities to binary predictions (0 or 1)
+y_pred_binary = (y_pred >= 0.5).astype(int)
+
+# Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred_binary)
+print("Accuracy:", accuracy)
+
+# Calculate precision
+precision = precision_score(y_test, y_pred_binary)
+print("Precision:", precision)
+
+# Calculate recall
+recall = recall_score(y_test, y_pred_binary)
+print("Recall:", recall)
+
+# Calculate F1-score
+f1 = f1_score(y_test, y_pred_binary)
+print("F1-score:", f1)
+
+# Calculate ROC AUC score
+roc_auc = roc_auc_score(y_test, y_pred)
+print("ROC AUC score:", roc_auc)
+
+#---------------------------------------------------------------------------------------------------------------------
 # model = LogisticRegression()
 # cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='f1')
 #
-# print("Cross-validation F1 scores:", cv_scores)
+# print("\n\nCross-validation F1 scores:", cv_scores)
 # print("Mean F1 score:", cv_scores.mean())
 #
 # # Step 4: Train the model on the entire training set
@@ -400,16 +476,17 @@ print("Test set - Zeros:", test_zero_count, "Ones:", test_one_count)
 # print("Classification Report on Test Set:")
 # print(classification_report(y_test, y_pred))
 
-smote = SMOTE(random_state=42)
-X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
-
-# Build a logistic regression model
-model = LogisticRegression()
-
-# Train the model on the resampled data
-model.fit(X_train_resampled, y_train_resampled)
-
-# Evaluate the model on the test set
-y_pred = model.predict(X_test)
-print("Classification Report on Test Set:")
-print(classification_report(y_test, y_pred))
+#---------------------------------------------------------------------------------------------------------------------
+# smote = SMOTE(random_state=42)
+# X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+#
+# # Build a logistic regression model
+# model = LogisticRegression()
+#
+# # Train the model on the resampled data
+# model.fit(X_train_resampled, y_train_resampled)
+#
+# # Evaluate the model on the test set
+# y_pred = model.predict(X_test)
+# print("Classification Report on Test Set:")
+# print(classification_report(y_test, y_pred))
