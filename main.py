@@ -1,22 +1,17 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
 import seaborn as sns
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
-from imblearn.over_sampling import SMOTE
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.preprocessing import OneHotEncoder
 
-df = pd.read_csv('diabetic_data.csv', na_values=['?','None'] , low_memory=False)
+
+
+
+df = pd.read_csv('diabetic_data.csv', na_values=['?'] , low_memory=False)
 
 print(df.describe())
 print('\nshape of original data:',df.shape)
 print('-'*163)
 
-df.drop(columns=['encounter_id','A1Cresult'], inplace=True)
+df.drop(columns=['encounter_id'], inplace=True)
 missingValues = df.isna().sum()
 missingValues = missingValues[missingValues>0]
 missingPercentage = (missingValues/len(df))*100
@@ -49,7 +44,7 @@ value_counts = df['readmitted'].value_counts()
 print("Occurrence of each unique value in the column:")
 for value, count in value_counts.items():
     print(f"{value}: {count}")
-print('ratio :',90409/11357)
+print('ratio  :',value_counts[0]/(value_counts[1]))
 print('-'*163)
 print('values in admission_type_id :')
 print(df['admission_type_id'].unique())
@@ -62,10 +57,7 @@ print('-'*163)
 print('value in admission_source_id :')
 print(df['admission_source_id'].unique())
 print('-'*163)
-# Print the occurrence of each unique value
-print("Occurrence of each unique value in the column:")
-for value, count in value_counts.items():
-    print(f"{value}: {count}")
+
 columns_to_drop_from_ProblemStatement = ['repaglinide','nateglinide','chlorpropamide','glimepiride','acetohexamide','tolbutamide','acarbose','miglitol','troglitazone','tolazamide','examide','citoglipton','glyburide-metformin','glipizide-metformin','glimepiride-pioglitazone','metformin-rosiglitazone','metformin-pioglitazone']
 
 col_with_over_90perc_MisVal = missingPercentage[missingPercentage>90].index.tolist()
@@ -89,16 +81,16 @@ def identify_outliers_iqr(data):
 
 df_no_outliers = df.copy()
 
-for column in df.select_dtypes(include=['int64', 'float64']).columns:
+for column in df_no_outliers.select_dtypes(include=['int64', 'float64']).columns:
     if column != 'readmitted':
         outliers = identify_outliers_iqr(df[column])
         num_outliers = outliers.sum()
         df_no_outliers = df_no_outliers.loc[~outliers]
         print(f"Number of outliers by IQR in '{column}': {num_outliers}")
-    print(df_no_outliers.shape)
+    print('removed outliers datasize):',df_no_outliers.shape)
 
 print('-'*163)
-
+#
 # numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
 #
 # fig, axes = plt.subplots(len(numeric_cols), 2, figsize=(12, 4 * len(numeric_cols))) # Create subplots with 2 columns
@@ -141,92 +133,37 @@ print('-'*163)
 #     print('-'*163)
 #     plt.subplots_adjust(hspace=0.5)     # Add some space between subplots
 # plt.show()
+for column in df_no_outliers.select_dtypes(include=['int64', 'float64']).columns:
+    print(f"Summary statistics for column '{column}':")
+    print(df_no_outliers[column].describe())
+    print('Variance : ', df_no_outliers[column].var())
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4))
 
-print('Shape of Data after removing outliers: ',df_no_outliers.shape)
+    # Histogram using Seaborn
+    sns.histplot(data=df_no_outliers, x=column, ax=axes[0])
+    axes[0].set_xlabel(column)
+    axes[0].set_ylabel('Frequency')
+    axes[0].set_title(f"Histogram of column '{column}'")
+
+    # Bar plot using Seaborn
+    value_counts = df_no_outliers[column].value_counts()
+    sns.barplot(x=value_counts.index, y=value_counts.values, ax=axes[1])
+    axes[1].set_xlabel(column)
+    axes[1].set_ylabel('Frequency')
+    axes[1].set_title(f"Bar Plot of column '{column}'")
+
+    # Box plot using Seaborn
+    sns.boxplot(data=df_no_outliers, x=column, ax=axes[2])
+    axes[2].set_xlabel(column)
+    axes[2].set_ylabel('Values')
+    axes[2].set_title(f"Box Plot of column '{column}'")
+
+    plt.tight_layout()
+    plt.show()
+
+print('Shape of Data after removing all outliers: ',df_no_outliers.shape)
 print('-'*163)
 
-# Perform one-hot encoding for the admission_type_id , admission_source_id and  discharge_disposition_id column
-
-# df_no_outliers = pd.get_dummies(df_no_outliers, columns=['admission_source_id'], prefix='admission_source_')
-# # print(df_no_outliers.columns)
-# print(df_no_outliers.shape)
-#
-# df_no_outliers = pd.get_dummies(df_no_outliers, columns=['discharge_disposition_id'], prefix='discharge_disposition_')
-# # print(df_no_outliers.columns)
-# print(df_no_outliers.shape)
-#
-# df_no_outliers = pd.get_dummies(df_no_outliers, columns=['admission_type_id'], prefix='admission_type_')
-# # print(df_no_outliers.columns)
-# print(df_no_outliers.shape)
-#
-# corr_matrix = df_no_outliers.corr()
-#
-# # Extract the correlation values with the 'readmitted' column
-# admission_type_corr = corr_matrix['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('admission_type')]]
-#
-# # Print the correlation values
-# print("Correlation of admission type columns with 'readmitted':")
-# print(admission_type_corr)
-#
-# plt.figure(figsize=(10, 6))
-# sns.heatmap(admission_type_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
-# plt.title("Correlation Heatmap of 'readmitted' with Admission Type")
-# plt.xlabel("Admission Type")
-# plt.ylabel("Correlation with 'readmitted'")
-# plt.xticks(rotation=45)
-# plt.yticks(rotation=0)
-# plt.tight_layout()
-# plt.show()
-#
-#
-# corr_matrix_1 = df_no_outliers.corr()
-#
-# # Extract the correlation values with the 'readmitted' column
-# discharge_disposition_corr = corr_matrix_1['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('discharge_disposition')]]
-# print("Correlation of discharge disposition columns with 'readmitted':")
-# print(discharge_disposition_corr)
-#
-# plt.figure(figsize=(10, 6))
-# sns.heatmap(discharge_disposition_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
-# plt.title("Correlation Heatmap of 'readmitted' with Discharge Disposition")
-# plt.xlabel("Discharge Disposition")
-# plt.ylabel("Correlation with 'readmitted'")
-# plt.xticks(rotation=45)
-# plt.yticks(rotation=0)
-# plt.tight_layout()
-# plt.show()
-#
-# corr_matrix_2 = df_no_outliers.corr()
-#
-# # Extract the correlation values with the 'readmitted' column
-# admission_source_corr = corr_matrix_2['readmitted'][df_no_outliers.columns[df_no_outliers.columns.str.startswith('admission_source')]]
-# print("Correlation of admission source columns with 'readmitted':")
-# print(admission_source_corr)
-#
-# plt.figure(figsize=(10, 6))
-# sns.heatmap(admission_source_corr.to_frame(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
-# plt.title("Correlation Heatmap of 'readmitted' with Admission Source")
-# plt.xlabel("Admission Source")
-# plt.ylabel("Correlation with 'readmitted'")
-# plt.xticks(rotation=45)
-# plt.yticks(rotation=0)
-# plt.tight_layout()
-# plt.show()
-
-print('-'*163)
-print(df_no_outliers.shape)
-
-# admission_type_cols = [col for col in df_no_outliers.columns if col.startswith('admission_type')]
-# df_no_outliers = df_no_outliers.drop(columns=admission_type_cols)
-#
-# # Drop columns starting with 'discharge_disposition'
-# discharge_disposition_cols = [col for col in df_no_outliers.columns if col.startswith('discharge_disposition')]
-# df_no_outliers = df_no_outliers.drop(columns=discharge_disposition_cols)
-#
-# # Drop columns starting with 'admission_source'
-# admission_source_cols = [col for col in df_no_outliers.columns if col.startswith('admission_source')]
-# df_no_outliers = df_no_outliers.drop(columns=admission_source_cols)
-# 'number_emergency','number_outpatient'
 col_to_normalize = ['number_inpatient','num_medications','num_procedures','num_lab_procedures','time_in_hospital','number_diagnoses']
 
 def min_max_scaling(x):
@@ -236,35 +173,19 @@ df_no_outliers[col_to_normalize] = df_no_outliers[col_to_normalize].apply(min_ma
 
 print(df_no_outliers.T.head(20))
 
-# Assuming df is your DataFrame
-# cols_to_drop = ['diag_1', 'diag_2', 'diag_3']  # Replace 'col1', 'col2', 'col3' with the column names you want to drop
-# df_no_outliers = df_no_outliers.drop(columns=cols_to_drop)
 
 print('Before Encoding shape:',df_no_outliers.shape)
 
 categorical_cols_forLabelEncoding = ['diabetesMed','change','insulin','rosiglitazone','pioglitazone','glyburide','glipizide','metformin',
-                                     # 'A1Cresult','max_glu_serum',
+                                     'A1Cresult','max_glu_serum',
                                      'age','gender']
 categorical_cols_forOneHotEncoding = ['diag_1','diag_2','diag_3','medical_specialty','payer_code','admission_type_id','discharge_disposition_id','admission_source_id','race']
-# Perform one-hot encoding for each categorical column
 
-
-# Apply label encoding to each set of columns
-# for feature in categorical_cols_forLabelEncoding:
-#     le = LabelEncoder()
-#     df_no_outliers[feature] = le.fit_transform(df_no_outliers[feature])
-#
-#
-# cat_cols = df_no_outliers[categorical_cols_forOneHotEncoding]
-# encoder = OneHotEncoder()
-# encoded_features = encoder.fit_transform(cat_cols)
-# encoded_df = pd.DataFrame(encoded_features.toarray(), columns=encoder.get_feature_names(categorical_cols_forOneHotEncoding))
-# df_no_outliers = pd.concat([df_no_outliers.drop(columns=categorical_cols_forOneHotEncoding), encoded_df], axis=1)
-
+# Label encoding
 for feature in categorical_cols_forLabelEncoding:
     df_no_outliers[feature] = pd.factorize(df_no_outliers[feature])[0]
 
-# Apply one-hot encoding to each set of columns separately
+# One-hot encoding
 df_no_outliers = pd.get_dummies(df_no_outliers, columns=categorical_cols_forOneHotEncoding, drop_first=True)
 
 
@@ -273,58 +194,13 @@ print('-'*163)
 
 
 
-class_counts = df_no_outliers['readmitted'].value_counts()
-
-# Plot the distribution of unique classes
-plt.figure(figsize=(8, 6))
-class_counts.plot(kind='bar', color='skyblue')
-plt.title('Distribution of Unique Classes (Target Variable)')
-plt.xlabel('Classes')
-plt.ylabel('Frequency')
-plt.xticks(rotation=0)  # Rotate x-axis labels if necessary
-plt.show()
-
-
 
 col_to_move = df_no_outliers.pop('readmitted')
-
 df_no_outliers['readmitted'] = col_to_move
 
-# correlation_matrix = df_no_outliers.corr()
-#
-# plt.figure(figsize=(16, 10))
-# sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
-# plt.title('Correlation Matrix Heatmap')
-# plt.show()
-
-
-
-
 print('-'*163)
 
 
-
-print('-'*163)
-
-dup = df_no_outliers.duplicated(subset=['patient_nbr'], keep=False)
-print(dup.sum())
-print(df_no_outliers['patient_nbr'].nunique())
-
-value_counts = df_no_outliers['patient_nbr'].value_counts()
-
-# Filter values that occur only once
-unique_values = value_counts[value_counts == 1]
-
-# Count the number of unique values
-num_unique_values = len(unique_values)
-
-# Print the number of values occurring only once
-print("Number of values occurring only once in the column:", num_unique_values)
-print(dup.sum() + num_unique_values)
-
-print('-'*163)
-
-print(df_no_outliers['readmitted'].unique())
 
 value_counts = df_no_outliers['readmitted'].value_counts()
 
@@ -332,302 +208,233 @@ value_counts = df_no_outliers['readmitted'].value_counts()
 print("Occurrence of each unique value in the column:")
 for value, count in value_counts.items():
     print(f"{value}: {count}")
-print('ratio : ', 23898/2857)
-print('-'*163)
-num_object_columns = len(df_no_outliers.select_dtypes(include=['object']).columns)
+print('ratio : ', value_counts[0]/(value_counts[1]))
 
-print("Number of columns with object datatype:", num_object_columns)
+
 print('-'*163)
 print('MODEL BUILDING')
 print('-'*163)
-
-print(df_no_outliers.shape)
 #
-# from sklearn.model_selection import train_test_split, cross_val_score
-# from sklearn.linear_model import LogisticRegression
-# from sklearn.metrics import classification_report
+# # print(df_no_outliers.shape)
+# #
+# #
+# #
+# # # Split the data into features (X) and target variable (y)
+# # X = df_no_outliers.drop(columns=['readmitted'])
+# # y = df_no_outliers['readmitted']
+# #
+# # # Split the data into training and test sets, stratifying by the target variable
+# # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+# #
+# # print("Training set - Class distribution:")
+# # print("Zeros:", (y_train == 0).sum(), "Ones:", (y_train == 1).sum())
+# #
+# # print("Test set - Class distribution:")
+# # print("Zeros:", (y_test == 0).sum(), "Ones:", (y_test == 1).sum())
+# #
+# # linear_model = LinearRegression()
+# #
+# # # Train the model on the training set
+# # linear_model.fit(X_train, y_train)
+# #
+# # # Make predictions on the test set
+# # y_pred = linear_model.predict(X_test)
+# #
+# # # Evaluate the model using Mean Squared Error
+# # mse = sk.metrics.mean_squared_error(y_test, y_pred)
+# # print("Mean Squared Error:", mse)
+# #
+# #
+# # # Convert predicted values to binary classifications (0 or 1)
+# # y_pred_binary = (y_pred >= 0.5).astype(int)
+# #
+# # print('-'*163)
+# #
+# # # Compute accuracy
+# # accuracy = (y_pred_binary == y_test).mean()
+# # print("Accuracy:", accuracy)
+# #
+# # # Compute precision
+# # true_positives = ((y_pred_binary == 1) & (y_test == 1)).sum()
+# # false_positives = ((y_pred_binary == 1) & (y_test == 0)).sum()
+# # precision = true_positives / (true_positives + false_positives)
+# # print("Precision:", precision)
+# #
+# #
+# #
+# #
+# # print('-'*163)
+# # mae = sk.metrics.mean_absolute_error(y_test, y_pred)
+# # print("Mean Absolute Error (MAE):", mae)
+# # rmse = sk.metrics.mean_squared_error(y_test, y_pred, squared=False)
+# # print("Root Mean Squared Error (RMSE):", rmse)
+# # r2 = sk.metrics.r2_score(y_test, y_pred)
+# # print("R-squared (R2):", r2)
+# # mape = sk.metrics.mean_absolute_percentage_error(y_test, y_pred)
+# # print("Mean Absolute Percentage Error (MAPE):", mape)
+# # print('-'*163)
+# #
+# # # Convert predicted probabilities to binary predictions (0 or 1)
+# # y_pred_binary = (y_pred >= 0.5).astype(int)
+# #
+# # # Calculate accuracy
+# # accuracy = accuracy_score(y_test, y_pred_binary)
+# # print("Accuracy:", accuracy)
+# #
+# # # Calculate precision
+# # precision = precision_score(y_test, y_pred_binary)
+# # print("Precision:", precision)
+# #
+# # # Calculate recall
+# # recall = recall_score(y_test, y_pred_binary)
+# # print("Recall:", recall)
+# #
+# # # Calculate F1-score
+# # f1 = f1_score(y_test, y_pred_binary)
+# # print("F1-score:", f1)
+# #
+# # # Calculate ROC AUC score
+# # roc_auc = roc_auc_score(y_test, y_pred)
+# # print("ROC AUC score:", roc_auc)
+# # #---------------------------------------------------------------------------------------------------------------------
+# # # oversampling
+# # #---------------------------------------------------------------------------------------------------------------------
+# #
+# # # Apply oversampling to the training set
+# # X_train_resampled, y_train_resampled = imb.over_sampling.RandomOverSampler(random_state=42).fit_resample(X_train, y_train)
+# #
+# # # Train the model on the resampled training set
+# # linear_model = LinearRegression()
+# # linear_model.fit(X_train_resampled, y_train_resampled)
+# #
+# # # Make predictions on the test set
+# # y_pred = linear_model.predict(X_test)
+# #
+# # print('-'*163)
+# # print('AFTER OVERSAMPLING')
+# # print('-'*163)
+# #
+# # # Evaluate the model using Mean Squared Error
+# # mse = sk.metrics.mean_squared_error(y_test, y_pred)
+# # print("Mean Squared Error:", mse)
+# #
+# # # Convert predicted values to binary classifications (0 or 1)
+# # y_pred_binary = (y_pred >= 0.5).astype(int)
+# #
+# # # Compute accuracy
+# # accuracy = accuracy_score(y_test, y_pred_binary)
+# # print("Accuracy:", accuracy)
+# #
+# # # Compute precision
+# # precision = precision_score(y_test, y_pred_binary)
+# # print("Precision:", precision)
+# #
+# # # Compute recall
+# # recall = recall_score(y_test, y_pred_binary)
+# # print("Recall:", recall)
+# #
+# # # Compute F1-score
+# # f1 = f1_score(y_test, y_pred_binary)
+# # print("F1-score:", f1)
+# #
+# # # Compute ROC AUC score
+# # roc_auc = roc_auc_score(y_test, y_pred)
+# # print("ROC AUC score:", roc_auc)
+# #
+# # #---------------------------------------------------------------------------------------------------------------------
+# # #AFTER UNDERSAMPLING
+# # #---------------------------------------------------------------------------------------------------------------------
+# #
+# # # Apply undersampling to the training set
+# # X_train_resampled, y_train_resampled = imb.under_sampling.RandomUnderSampler(random_state=42).fit_resample(X_train, y_train)
+# #
+# # # Train the model on the resampled training set
+# # linear_model = LinearRegression()
+# # linear_model.fit(X_train_resampled, y_train_resampled)
+# #
+# # # Make predictions on the test set
+# # y_pred = linear_model.predict(X_test)
+# #
+# #
+# # print('-'*163)
+# # print('AFTER UNDERSAMPLING')
+# # print('-'*163)
+# #
+# # # Evaluate the model using Mean Squared Error
+# # mse = mean_squared_error(y_test, y_pred)
+# # print("Mean Squared Error:", mse)
+# #
+# # # Convert predicted values to binary classifications (0 or 1)
+# # y_pred_binary = (y_pred >= 0.5).astype(int)
+# #
+# # # Compute accuracy
+# # accuracy = accuracy_score(y_test, y_pred_binary)
+# # print("Accuracy:", accuracy)
+# #
+# # # Compute precision
+# # precision = precision_score(y_test, y_pred_binary)
+# # print("Precision:", precision)
+# #
+# # # Compute recall
+# # recall = recall_score(y_test, y_pred_binary)
+# # print("Recall:", recall)
+# #
+# # # Compute F1-score
+# # f1 = f1_score(y_test, y_pred_binary)
+# # print("F1-score:", f1)
+# #
+# # # Compute ROC AUC score
+# # roc_auc = roc_auc_score(y_test, y_pred)
+# # print("ROC AUC score:", roc_auc)
 #
-# # Step 1: Split the data into features (X) and target variable (y)
-# X = df_no_outliers.drop(columns=['readmitted'])
-# y = df_no_outliers['readmitted']
-#
-# # Step 2: Split the data into training and test sets
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-#
-# # Step 3: Build the linear model and evaluate it using cross-validation
-# model = LogisticRegression()
-# cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='f1')
-#
-# print("Cross-validation F1 scores:", cv_scores)
-# print("Mean F1 score:", cv_scores.mean())
-#
-# # Step 4: Train the model on the entire training set
-# model.fit(X_train, y_train)
-#
-# # Step 5: Evaluate the model on the test set
-# y_pred = model.predict(X_test)
-# print("Classification Report on Test Set:")
-# print(classification_report(y_test, y_pred))
-
-
-
-
-from sklearn.model_selection import train_test_split, cross_val_score
-
-# Split the data into features (X) and target variable (y)
-X = df_no_outliers.drop(columns=['readmitted'])
-y = df_no_outliers['readmitted']
-
-# Split the data into training and test sets, stratifying by the target variable
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-
-print("Training set - Class distribution:")
-print("Zeros:", (y_train == 0).sum(), "Ones:", (y_train == 1).sum())
-
-print("Test set - Class distribution:")
-print("Zeros:", (y_test == 0).sum(), "Ones:", (y_test == 1).sum())
-
-linear_model = LinearRegression()
-
-# Train the model on the training set
-linear_model.fit(X_train, y_train)
-
-# Make predictions on the test set
-y_pred = linear_model.predict(X_test)
-
-# Evaluate the model using Mean Squared Error
-mse = mean_squared_error(y_test, y_pred)
-print("Mean Squared Error:", mse)
-
-
-# Convert predicted values to binary classifications (0 or 1)
-y_pred_binary = (y_pred >= 0.5).astype(int)
-
-print('-'*163)
-
-# Compute accuracy
-accuracy = (y_pred_binary == y_test).mean()
-print("Accuracy:", accuracy)
-
-# Compute precision
-true_positives = ((y_pred_binary == 1) & (y_test == 1)).sum()
-false_positives = ((y_pred_binary == 1) & (y_test == 0)).sum()
-precision = true_positives / (true_positives + false_positives)
-print("Precision:", precision)
-
-
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_squared_log_error, mean_absolute_percentage_error
-
-print('-'*163)
-mae = mean_absolute_error(y_test, y_pred)
-print("Mean Absolute Error (MAE):", mae)
-rmse = mean_squared_error(y_test, y_pred, squared=False)
-print("Root Mean Squared Error (RMSE):", rmse)
-r2 = r2_score(y_test, y_pred)
-print("R-squared (R2):", r2)
-mape = mean_absolute_percentage_error(y_test, y_pred)
-print("Mean Absolute Percentage Error (MAPE):", mape)
-print('-'*163)
-
-
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-
-# Convert predicted probabilities to binary predictions (0 or 1)
-y_pred_binary = (y_pred >= 0.5).astype(int)
-
-# Calculate accuracy
-accuracy = accuracy_score(y_test, y_pred_binary)
-print("Accuracy:", accuracy)
-
-# Calculate precision
-precision = precision_score(y_test, y_pred_binary)
-print("Precision:", precision)
-
-# Calculate recall
-recall = recall_score(y_test, y_pred_binary)
-print("Recall:", recall)
-
-# Calculate F1-score
-f1 = f1_score(y_test, y_pred_binary)
-print("F1-score:", f1)
-
-# Calculate ROC AUC score
-roc_auc = roc_auc_score(y_test, y_pred)
-print("ROC AUC score:", roc_auc)
-#---------------------------------------------------------------------------------------------------------------------
-# oversampling
-#---------------------------------------------------------------------------------------------------------------------
-
-from imblearn.over_sampling import RandomOverSampler
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-
-# Apply oversampling to the training set
-oversampler = RandomOverSampler(random_state=42)
-X_train_resampled, y_train_resampled = oversampler.fit_resample(X_train, y_train)
-
-# Train the model on the resampled training set
-linear_model = LinearRegression()
-linear_model.fit(X_train_resampled, y_train_resampled)
-
-# Make predictions on the test set
-y_pred = linear_model.predict(X_test)
-
-print('-'*163)
-print('AFTER OVERSAMPLING')
-print('-'*163)
-
-# Evaluate the model using Mean Squared Error
-mse = mean_squared_error(y_test, y_pred)
-print("Mean Squared Error:", mse)
-
-# Convert predicted values to binary classifications (0 or 1)
-y_pred_binary = (y_pred >= 0.5).astype(int)
-
-# Compute accuracy
-accuracy = accuracy_score(y_test, y_pred_binary)
-print("Accuracy:", accuracy)
-
-# Compute precision
-precision = precision_score(y_test, y_pred_binary)
-print("Precision:", precision)
-
-# Compute recall
-recall = recall_score(y_test, y_pred_binary)
-print("Recall:", recall)
-
-# Compute F1-score
-f1 = f1_score(y_test, y_pred_binary)
-print("F1-score:", f1)
-
-# Compute ROC AUC score
-roc_auc = roc_auc_score(y_test, y_pred)
-print("ROC AUC score:", roc_auc)
-
-#---------------------------------------------------------------------------------------------------------------------
-#AFTER UNDERSAMPLING
-#---------------------------------------------------------------------------------------------------------------------
-from imblearn.under_sampling import RandomUnderSampler
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-
-# Apply undersampling to the training set
-undersampler = RandomUnderSampler(random_state=42)
-X_train_resampled, y_train_resampled = undersampler.fit_resample(X_train, y_train)
-
-# Train the model on the resampled training set
-linear_model = LinearRegression()
-linear_model.fit(X_train_resampled, y_train_resampled)
-
-# Make predictions on the test set
-y_pred = linear_model.predict(X_test)
-
-
-print('-'*163)
-print('AFTER UNDERSAMPLING')
-print('-'*163)
-
-# Evaluate the model using Mean Squared Error
-mse = mean_squared_error(y_test, y_pred)
-print("Mean Squared Error:", mse)
-
-# Convert predicted values to binary classifications (0 or 1)
-y_pred_binary = (y_pred >= 0.5).astype(int)
-
-# Compute accuracy
-accuracy = accuracy_score(y_test, y_pred_binary)
-print("Accuracy:", accuracy)
-
-# Compute precision
-precision = precision_score(y_test, y_pred_binary)
-print("Precision:", precision)
-
-# Compute recall
-recall = recall_score(y_test, y_pred_binary)
-print("Recall:", recall)
-
-# Compute F1-score
-f1 = f1_score(y_test, y_pred_binary)
-print("F1-score:", f1)
-
-# Compute ROC AUC score
-roc_auc = roc_auc_score(y_test, y_pred)
-print("ROC AUC score:", roc_auc)
-
-
-
-
-
+# # #---------------------------------------------------------------------------------------------------------------------
+# # #RANDOM FOREST
+# # #---------------------------------------------------------------------------------------------------------------------
+# #
+# #
+# # print('-'*163)
+# # print('Random Forest')
+# # print('-'*163)
+# #
+# #
+# # data = df_no_outliers.copy()
+# #
+# # X = data.drop('readmitted', axis=1)
+# # y = data['readmitted']
+# #
+# # sc_X = sk.preprocessing.StandardScaler()
+# # X_s = sc_X.fit_transform(X)
+# #
+# # X_train, X_test, y_train, y_test = train_test_split(X_s, y, test_size=0.2, random_state=42)
+# #
+# # model = sk.ensemble.RandomForestClassifier()
+# # model.fit(X_train, y_train)
+# #
+# # y_pred = model.predict(X_test)
+# # print(f'Accuracy: {accuracy_score(y_test, y_pred):%}', )
+# # print(f'Precision: { precision_score(y_test, y_pred, zero_division=1):%}',)
+# # print(f'Recall: { recall_score(y_test, y_pred):%}',)
+# # print(f'F1 Score: { f1_score(y_test, y_pred):%}',)
+# #
+# #
+# # X_resampled, y_resampled = imb.over_sampling.SMOTE(random_state=42).fit_resample(X_s, y)
+# #
+# # X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.2, random_state=42)
+# #
+# # model_balance  = sk.ensemble.RandomForestClassifier()
+# # model_balance.fit(X_train, y_train)
+# #
+# # y_pred_balanced = model_balance.predict(X_test)
+# # print(f'Balanced Data - Accuracy: {accuracy_score(y_test, y_pred_balanced):%}', )
+# # print(f'Balanced Data - Precision: {precision_score(y_test, y_pred_balanced,zero_division=1):%}', )
+# # print(f'Balanced Data - Recall: {recall_score(y_test, y_pred_balanced):%}', )
+# # print(f'Balanced Data - F1 Score: {f1_score(y_test, y_pred_balanced):%}', )
+# #
 
 #---------------------------------------------------------------------------------------------------------------------
-# model = LogisticRegression()
-# cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='f1')
-#
-# print("\n\nCross-validation F1 scores:", cv_scores)
-# print("Mean F1 score:", cv_scores.mean())
-#
-# # Step 4: Train the model on the entire training set
-# model.fit(X_train, y_train)
-#
-# # Step 5: Evaluate the model on the test set
-# y_pred = model.predict(X_test)
-# print("Classification Report on Test Set:")
-# print(classification_report(y_test, y_pred))
-
+#LOGISTIC REGRESSION
 #---------------------------------------------------------------------------------------------------------------------
-# smote = SMOTE(random_state=42)
-# X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
-#
-# # Build a logistic regression model
-# model = LogisticRegression()
-#
-# # Train the model on the resampled data
-# model.fit(X_train_resampled, y_train_resampled)
-#
-# # Evaluate the model on the test set
-# y_pred = model.predict(X_test)
-# print("Classification Report on Test Set:")
-# print(classification_report(y_test, y_pred))
-#---------------------------------------------------------------------------------------------------------------------
-
 print('-'*163)
-print('Random Forest')
+print('LOGISTIC REGRESSION')
 print('-'*163)
 
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.ensemble import RandomForestClassifier
-from imblearn.over_sampling import SMOTE
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-
-data = df_no_outliers.copy()
-
-X = data.drop('readmitted', axis=1)
-y = data['readmitted']
-
-sc_X = StandardScaler()
-X_s = sc_X.fit_transform(X)
-
-X_train, X_test, y_train, y_test = train_test_split(X_s, y, test_size=0.2, random_state=42)
-
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
-
-y_pred = model.predict(X_test)
-print(f'Accuracy: {accuracy_score(y_test, y_pred):%}', )
-print(f'Precision: { precision_score(y_test, y_pred):%}',)
-print(f'Recall: { recall_score(y_test, y_pred):%}',)
-print(f'F1 Score: { f1_score(y_test, y_pred):%}',)
-
-smote = SMOTE(random_state=42)
-X_resampled, y_resampled = smote.fit_resample(X_s, y)
-
-X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.2, random_state=42)
-
-model_balance  = RandomForestClassifier()
-model_balance.fit(X_train, y_train)
-
-y_pred_balanced = model_balance.predict(X_test)
-print(f'Balanced Data - Accuracy: {accuracy_score(y_test, y_pred_balanced):%}', )
-print(f'Balanced Data - Precision: {precision_score(y_test, y_pred_balanced):%}', )
-print(f'Balanced Data - Recall: {recall_score(y_test, y_pred_balanced):%}', )
-print(f'Balanced Data - F1 Score: {f1_score(y_test, y_pred_balanced):%}', )
